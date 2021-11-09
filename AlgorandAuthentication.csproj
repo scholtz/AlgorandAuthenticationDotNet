@@ -1,0 +1,34 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net5.0</TargetFramework>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <Authors>Ludovit Scholtz, Daniel Dohne</Authors>
+    <Company>Scholtz And Co</Company>
+    <Description>Allows authenticate using algorand protocol in dotnet applications.</Description>
+    <PackageProjectUrl>https://scholtz.github.io/AMS/AMS-0003/AMS-0003.html</PackageProjectUrl>
+    <PackageIcon>algorand-algo-logo-whtbck-512.png</PackageIcon>
+    <PackageIconUrl />
+    <RepositoryUrl>https://github.com/scholtz/AlgorandAuthenticationDotNet</RepositoryUrl>
+    <NeutralLanguage>en-US</NeutralLanguage>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <Version>1.0.1</Version>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Algorand" Version="0.2.0.8" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.Negotiate" Version="5.0.11" />
+    <PackageReference Include="Microsoft.Extensions.Caching.Abstractions" Version="5.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="5.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Options" Version="5.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="algorand-algo-logo-whtbck-512.png">
+      <Pack>True</Pack>
+      <PackagePath></PackagePath>
+    </None>
+  </ItemGroup>
+
+
+</Project>
