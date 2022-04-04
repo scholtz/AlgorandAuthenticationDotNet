@@ -1,9 +1,4 @@
 ﻿using Microsoft.AspNetCore.Authentication;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace AlgorandAuthentication
 {
@@ -14,5 +9,6 @@ namespace AlgorandAuthentication
         public string AlgodServerToken { get; set; } = "";
         public string Realm { get; set; } = "Authentication";
         public string NetworkGenesisHash { get; set; }
+        public ulong MsPerBlock { get; set; } = 4500;
     }
 }

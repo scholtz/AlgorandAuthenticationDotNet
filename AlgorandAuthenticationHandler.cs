@@ -1,7 +1,5 @@
 ﻿using Algorand;
 using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.Negotiate;
-using Microsoft.Extensions.Internal;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Org.BouncyCastle.Crypto.Parameters;
@@ -9,7 +7,6 @@ using Org.BouncyCastle.Crypto.Signers;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net.Http.Headers;
 using System.Security.Claims;
 using System.Text;
 using System.Text.Encodings.Web;
@@ -43,7 +40,10 @@ namespace AlgorandAuthentication
         {
             this.logger = loggerFactory.CreateLogger<AlgorandAuthenticationHandler>();
         }
-
+        /// <summary>
+        /// Handle Request
+        /// </summary>
+        /// <returns></returns>
         public async Task<bool> HandleRequestAsync()
         {
             logger.LogInformation("HandleRequestAsync");
@@ -87,11 +87,17 @@ namespace AlgorandAuthentication
                 {
                     return AuthenticateResult.Fail(new Exception("Invalid Network"));
                 }
-                if (Options.Realm != Encoding.ASCII.GetString(tr.tx.note))
+                if (!string.IsNullOrEmpty(Options.Realm))
                 {
-                    // todo: add meaningful message
-                    return AuthenticateResult.Fail(new Exception("Wrong Realm"));
+                    var realm = Encoding.ASCII.GetString(tr.tx.note);
+                    if (Options.Realm != realm)
+                    {
+                        // todo: add meaningful message
+                        logger.LogTrace($"Wrong realm. Expected {Options.Realm} received {realm}");
+                        return AuthenticateResult.Fail(new Exception("Wrong Realm"));
+                    }
                 }
+                DateTimeOffset? expiration = null;
                 if (Options.CheckExpiration)
                 {
                     ulong estimatedCurrentBlock;
@@ -116,20 +122,32 @@ namespace AlgorandAuthentication
                     {
                         return AuthenticateResult.Fail(new Exception("Session timed out"));
                     }
+                    expiration = DateTimeOffset.UtcNow + TimeSpan.FromMilliseconds((tr.tx.lastValid.Value - estimatedCurrentBlock) * Options.MsPerBlock);
                 }
 
                 var user = tr.tx.sender.ToString();
-                var claims = new[] {
-                new Claim(ClaimTypes.NameIdentifier,user),
-                new Claim(ClaimTypes.Name,user),
-            };
+                var claims = new List<Claim>() {
+                    new Claim(ClaimTypes.NameIdentifier,user),
+                    new Claim(ClaimTypes.Name,user),
+                };
+
+                if (Options.CheckExpiration)
+                {
+                    if (expiration.HasValue)
+                    {
+                        claims.Add(new Claim("exp", expiration.Value.ToUnixTimeSeconds().ToString()));
+                    }
+                    claims.Add(new Claim("AlgoValidFrom", tr.tx.firstValid.Value.ToString()));
+                    claims.Add(new Claim("AlgoValidUntil", tr.tx.lastValid.Value.ToString()));
+                }
+
                 var identity = new ClaimsIdentity(claims, Scheme.Name);
                 var principal = new ClaimsPrincipal(identity);
                 var ticket = new AuthenticationTicket(principal, Scheme.Name);
 
                 return AuthenticateResult.Success(ticket);
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 return AuthenticateResult.Fail(e);
             }

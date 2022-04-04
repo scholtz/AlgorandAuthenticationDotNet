@@ -48,7 +48,7 @@ appsettings.json
 ```json
 {
   "algod": {
-    "server": "https://testnet.algoexplorerapi.io",
+    "server": "https://node.testnet.algoexplorerapi.io",
     "token": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
     "networkGenesisHash": "SGO1GKSzyE7IEPItTxCByw9x8FmnrCDexi9/cOUJOiI=",
     "realm": "www.globdrem.com",
