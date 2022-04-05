@@ -46,7 +46,11 @@ namespace AlgorandAuthentication
         /// <returns></returns>
         public async Task<bool> HandleRequestAsync()
         {
-            logger.LogInformation("HandleRequestAsync");
+            if (Options.Debug)
+            {
+                logger.LogInformation("HandleRequestAsync");
+                await Task.Delay(1);
+            }
             return false;
         }
 
@@ -67,25 +71,27 @@ namespace AlgorandAuthentication
         {
             try
             {
-                logger.LogInformation("HandleAuthenticateAsync");
                 if (!Request.Headers.ContainsKey("Authorization"))
-                    return AuthenticateResult.NoResult();
-
+                    throw new UnauthorizedException("No authorization header");
+                if (Options.Debug)
+                {
+                    logger.LogDebug($"Auth header: {Request.Headers["Authorization"].ToString()}");
+                }
                 var auth = Request.Headers["Authorization"].ToString();
                 if (!auth.StartsWith(AuthPrefix))
                 {
-                    return AuthenticateResult.NoResult();
+                    throw new UnauthorizedException($"Authorization header does not start with prefix {AuthPrefix}");
                 }
                 var tx = Convert.FromBase64String(auth.Replace(AuthPrefix, ""));
                 var tr = Algorand.Encoder.DecodeFromMsgPack<SignedTransaction>(tx);
 
                 if (!Verify(tr.tx.sender.Bytes, tr.tx.BytesToSign(), tr.sig.Bytes))
                 {
-                    return AuthenticateResult.Fail(new Exception("Signature is invalid"));
+                    throw new UnauthorizedException("Signature is invalid");
                 }
                 if (Convert.ToBase64String(tr.tx.genesisHash.Bytes) != Options.NetworkGenesisHash)
                 {
-                    return AuthenticateResult.Fail(new Exception("Invalid Network"));
+                    throw new UnauthorizedException("Invalid Network");
                 }
                 if (!string.IsNullOrEmpty(Options.Realm))
                 {
@@ -93,8 +99,7 @@ namespace AlgorandAuthentication
                     if (Options.Realm != realm)
                     {
                         // todo: add meaningful message
-                        logger.LogTrace($"Wrong realm. Expected {Options.Realm} received {realm}");
-                        return AuthenticateResult.Fail(new Exception("Wrong Realm"));
+                        throw new UnauthorizedException($"Wrong realm. Expected {Options.Realm} received {realm}");
                     }
                 }
                 DateTimeOffset? expiration = null;
@@ -120,7 +125,7 @@ namespace AlgorandAuthentication
 
                     if (tr.tx.lastValid.Value < estimatedCurrentBlock)
                     {
-                        return AuthenticateResult.Fail(new Exception("Session timed out"));
+                        throw new UnauthorizedException("Session timed out");
                     }
                     expiration = DateTimeOffset.UtcNow + TimeSpan.FromMilliseconds((tr.tx.lastValid.Value - estimatedCurrentBlock) * Options.MsPerBlock);
                 }
@@ -146,6 +151,39 @@ namespace AlgorandAuthentication
                 var ticket = new AuthenticationTicket(principal, Scheme.Name);
 
                 return AuthenticateResult.Success(ticket);
+            }
+            catch (UnauthorizedException e)
+            {
+                if (Options.EmptySuccessOnFailure)
+                {
+                    if (Options.Debug)
+                    {
+                        logger.LogDebug(e.Message);
+                    }
+
+                    var user = "";
+                    var claims = new List<Claim>() {
+                        new Claim(ClaimTypes.NameIdentifier,user),
+                        new Claim(ClaimTypes.Name,user),
+                    };
+
+                    var identity = new ClaimsIdentity(claims, Scheme.Name);
+                    var principal = new ClaimsPrincipal(identity);
+                    var ticket = new AuthenticationTicket(principal, Scheme.Name);
+
+                    return AuthenticateResult.Success(ticket);
+                }
+                else
+                {
+
+                    if (Options.Debug)
+                    {
+                        logger.LogError(e.Message);
+                    }
+
+                    return AuthenticateResult.Fail(e.Message);
+                }
+
             }
             catch (Exception e)
             {
