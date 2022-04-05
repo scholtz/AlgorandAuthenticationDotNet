@@ -1,4 +1,5 @@
 ﻿using Algorand;
+using Algorand.V2;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -112,13 +113,14 @@ namespace AlgorandAuthentication
                     }
                     else
                     {
-                        var client = new Algorand.V2.AlgodApi(Options.AlgodServer, Options.AlgodServerToken);
+                        var algodHttpClient = HttpClientConfigurator.ConfigureHttpClient(Options.AlgodServer, Options.AlgodServerToken, Options.AlgodServerHeader);
+                        var algodClient = new Algorand.V2.Algod.DefaultApi(algodHttpClient) { BaseUrl = Options.AlgodServer };
 
-                        var c = await client.GetStatusAsync();
-                        if (c.LastRound.HasValue)
+                        var c = await algodClient.StatusAsync();
+                        if (c != null)
                         {
                             t = DateTimeOffset.UtcNow;
-                            block = (ulong)c.LastRound.Value;
+                            block = (ulong)c.LastRound;
                         }
                         estimatedCurrentBlock = block;
                     }

@@ -21,6 +21,7 @@ public void ConfigureServices(
     o.CheckExpiration = true;
     o.AlgodServer = Configuration["algod:server"];
     o.AlgodServerToken = Configuration["algod:token"];
+    o.AlgodServerHeader = Configuration["algod:header"];
     o.Realm = Configuration["algod:realm"];
     o.NetworkGenesisHash = Configuration["algod:networkGenesisHash"];
    });
@@ -51,6 +52,7 @@ appsettings.json
     "server": "https://node.testnet.algoexplorerapi.io",
     "token": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
     "networkGenesisHash": "SGO1GKSzyE7IEPItTxCByw9x8FmnrCDexi9/cOUJOiI=",
+    "header": "X-Algo-API-Token",
     "realm": "www.globdrem.com",
     "CheckExpiration": "true"
   },
