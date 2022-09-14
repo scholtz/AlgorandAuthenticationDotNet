@@ -6,7 +6,7 @@
     <Authors>Ludovit Scholtz, Daniel Dohne</Authors>
     <Company>Scholtz And Co</Company>
     <Description>Allows authenticate using algorand protocol in dotnet applications.</Description>
-    <PackageProjectUrl>https://scholtz.github.io/AMS/AMS-0003/AMS-0003.html</PackageProjectUrl>
+    <PackageProjectUrl>https://github.com/scholtz/AlgorandAuthenticationDotNet</PackageProjectUrl>
     <PackageIcon>algorand-algo-logo-whtbck-512.png</PackageIcon>
     <PackageIconUrl />
     <RepositoryUrl>https://github.com/scholtz/AlgorandAuthenticationDotNet</RepositoryUrl>
