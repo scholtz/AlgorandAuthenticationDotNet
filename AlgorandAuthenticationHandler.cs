@@ -6,9 +6,7 @@ using Org.BouncyCastle.Crypto.Parameters;
 using Org.BouncyCastle.Crypto.Signers;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
-using System.Net.Http;
 using System.Security.Claims;
 using System.Text;
 using System.Text.Encodings.Web;
@@ -48,7 +46,11 @@ namespace AlgorandAuthentication
         /// <returns></returns>
         public async Task<bool> HandleRequestAsync()
         {
-            logger.LogInformation("HandleRequestAsync");
+            if (Options.Debug)
+            {
+                logger.LogInformation("HandleRequestAsync");
+                await Task.Delay(1);
+            }
             return false;
         }
 
@@ -69,29 +71,27 @@ namespace AlgorandAuthentication
         {
             try
             {
-                logger.LogInformation("HandleAuthenticateAsync");
                 if (!Request.Headers.ContainsKey("Authorization"))
-                    return AuthenticateResult.NoResult();
-
+                    throw new UnauthorizedException("No authorization header");
                 if (Options.Debug)
                 {
-                    Trace.WriteLine($"Request.Headers[Authorization]: {Request.Headers["Authorization"]}");
+                    logger.LogDebug($"Auth header: {Request.Headers["Authorization"].ToString()}");
                 }
                 var auth = Request.Headers["Authorization"].ToString();
                 if (!auth.StartsWith(AuthPrefix))
                 {
-                    return AuthenticateResult.NoResult();
+                    throw new UnauthorizedException($"Authorization header does not start with prefix {AuthPrefix}");
                 }
                 var tx = Convert.FromBase64String(auth.Replace(AuthPrefix, ""));
                 var tr = Algorand.Utils.Encoder.DecodeFromMsgPack<Algorand.Algod.Model.Transactions.SignedTransaction>(tx);
 
                 if (!Verify(tr.Tx.Sender.Bytes, tr.Tx.BytesToSign(), tr.Sig.Bytes))
                 {
-                    return AuthenticateResult.Fail(new Exception("Signature is invalid"));
+                    throw new UnauthorizedException("Signature is invalid");
                 }
                 if (Convert.ToBase64String(tr.Tx.GenesisHash.Bytes) != Options.NetworkGenesisHash)
                 {
-                    return AuthenticateResult.Fail(new Exception("Invalid Network"));
+                    throw new UnauthorizedException("Invalid Network");
                 }
                 if (!string.IsNullOrEmpty(Options.Realm))
                 {
@@ -99,8 +99,7 @@ namespace AlgorandAuthentication
                     if (Options.Realm != realm)
                     {
                         // todo: add meaningful message
-                        logger.LogTrace($"Wrong realm. Expected {Options.Realm} received {realm}");
-                        return AuthenticateResult.Fail(new Exception("Wrong Realm"));
+                        throw new UnauthorizedException($"Wrong realm. Expected {Options.Realm} received {realm}");
                     }
                 }
                 DateTimeOffset? expiration = null;
@@ -113,18 +112,21 @@ namespace AlgorandAuthentication
                     }
                     else
                     {
-                        var httpClient = HttpClientConfigurator.ConfigureHttpClient(Options.AlgodServer, Options.AlgodServerToken, Options.AlgodServerHeader);
-                        Algorand.Algod.DefaultApi client = new Algorand.Algod.DefaultApi(httpClient);
+                        var algodHttpClient = HttpClientConfigurator.ConfigureHttpClient(Options.AlgodServer, Options.AlgodServerToken, Options.AlgodServerHeader);
+                        var algodClient = new Algorand.Algod.DefaultApi(algodHttpClient);
 
-                        var c = await client.GetStatusAsync();
-                        t = DateTimeOffset.UtcNow;
-                        block = (ulong)c.LastRound;
+                        var c = await algodClient.GetStatusAsync();
+                        if (c != null)
+                        {
+                            t = DateTimeOffset.UtcNow;
+                            block = (ulong)c.LastRound;
+                        }
                         estimatedCurrentBlock = block;
                     }
 
                     if (tr.Tx.LastValid.Value < estimatedCurrentBlock)
                     {
-                        return AuthenticateResult.Fail(new Exception("Session timed out"));
+                        throw new UnauthorizedException("Session timed out");
                     }
                     expiration = DateTimeOffset.UtcNow + TimeSpan.FromMilliseconds((tr.Tx.LastValid.Value - estimatedCurrentBlock) * Options.MsPerBlock);
                 }
@@ -150,6 +152,39 @@ namespace AlgorandAuthentication
                 var ticket = new AuthenticationTicket(principal, Scheme.Name);
 
                 return AuthenticateResult.Success(ticket);
+            }
+            catch (UnauthorizedException e)
+            {
+                if (Options.EmptySuccessOnFailure)
+                {
+                    if (Options.Debug)
+                    {
+                        logger.LogDebug(e.Message);
+                    }
+
+                    var user = "";
+                    var claims = new List<Claim>() {
+                        new Claim(ClaimTypes.NameIdentifier,user),
+                        new Claim(ClaimTypes.Name,user),
+                    };
+
+                    var identity = new ClaimsIdentity(claims, Scheme.Name);
+                    var principal = new ClaimsPrincipal(identity);
+                    var ticket = new AuthenticationTicket(principal, Scheme.Name);
+
+                    return AuthenticateResult.Success(ticket);
+                }
+                else
+                {
+
+                    if (Options.Debug)
+                    {
+                        logger.LogError(e.Message);
+                    }
+
+                    return AuthenticateResult.Fail(e.Message);
+                }
+
             }
             catch (Exception e)
             {
