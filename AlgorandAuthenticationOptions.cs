@@ -7,8 +7,10 @@ namespace AlgorandAuthentication
         public bool CheckExpiration { get; set; } = false;
         public string AlgodServer { get; set; } = "";
         public string AlgodServerToken { get; set; } = "";
+        public string AlgodServerHeader { get; set; } = "";
         public string Realm { get; set; } = "Authentication";
         public string NetworkGenesisHash { get; set; }
         public ulong MsPerBlock { get; set; } = 4500;
+        public bool Debug { get; set; } = false;
     }
 }
