@@ -71,13 +71,17 @@ namespace AlgorandAuthentication
         {
             try
             {
-                if (!Request.Headers.ContainsKey("Authorization"))
+                var header = Request.Headers.ContainsKey("Authorization") ? "Authorization" :
+                    Request.Headers.ContainsKey("authorization") ? "authorization" : null;
+
+                if (string.IsNullOrEmpty(header))
                     throw new UnauthorizedException("No authorization header");
+
                 if (Options.Debug)
                 {
-                    logger.LogDebug($"Auth header: {Request.Headers["Authorization"].ToString()}");
+                    logger.LogDebug($"Auth header: {Request.Headers[header].ToString()}");
                 }
-                var auth = Request.Headers["Authorization"].ToString();
+                var auth = Request.Headers[header].ToString();
                 if (!auth.StartsWith(AuthPrefix))
                 {
                     throw new UnauthorizedException($"Authorization header does not start with prefix {AuthPrefix}");
