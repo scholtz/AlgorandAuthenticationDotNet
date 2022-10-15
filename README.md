@@ -73,6 +73,7 @@ Controller/Example.cs
 
 Plantuml:
 
+```plantuml
 @startuml
 
 User -> Website: User wish to login to the website 
@@ -97,6 +98,7 @@ Backend -> Website: 200 if authorized and returns content
 Website --> User: Displays /getUser content, fe roles or username
 
 @enduml
+```
 
 ![image](https://user-images.githubusercontent.com/1223439/195995737-7524c1fb-d5ae-432e-b6ff-9aac730e476b.png)
 
