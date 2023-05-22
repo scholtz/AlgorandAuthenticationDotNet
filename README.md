@@ -14,17 +14,24 @@ public void ConfigureServices(
 
 ...
 
-  services
-   .AddAuthentication(AlgorandAuthenticationHandler.ID)
-   .AddAlgorand(o =>
-   {
-    o.CheckExpiration = true;
-    o.AlgodServer = Configuration["algod:server"];
-    o.AlgodServerToken = Configuration["algod:token"];
-    o.AlgodServerHeader = Configuration["algod:header"];
-    o.Realm = Configuration["algod:realm"];
-    o.NetworkGenesisHash = Configuration["algod:networkGenesisHash"];
-   });
+	var algorandAuthenticationOptions = new AlgorandAuthenticationOptions();
+	builder.Configuration.GetSection("AlgorandAuthentication").Bind(algorandAuthenticationOptions);
+
+	builder.Services
+	 .AddAuthentication(AlgorandAuthenticationHandler.ID)
+	 .AddAlgorand(o =>
+	 {
+		 o.CheckExpiration = algorandAuthenticationOptions.CheckExpiration;
+		 o.Debug = algorandAuthenticationOptions.Debug;
+		 o.AlgodServer = algorandAuthenticationOptions.AlgodServer;
+		 o.AlgodServerToken = algorandAuthenticationOptions.AlgodServerToken;
+		 o.AlgodServerHeader = algorandAuthenticationOptions.AlgodServerHeader;
+		 o.Realm = algorandAuthenticationOptions.Realm;
+		 o.NetworkGenesisHash = algorandAuthenticationOptions.NetworkGenesisHash;
+		 o.MsPerBlock = algorandAuthenticationOptions.MsPerBlock;
+		 o.EmptySuccessOnFailure = algorandAuthenticationOptions.EmptySuccessOnFailure;
+		 o.EmptySuccessOnFailure = algorandAuthenticationOptions.EmptySuccessOnFailure;
+	 });
 
 ...
 
@@ -48,14 +55,15 @@ public void Configure(
 appsettings.json
 ```json
 {
-  "algod": {
-    "server": "https://node.testnet.algoexplorerapi.io",
-    "token": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-    "networkGenesisHash": "SGO1GKSzyE7IEPItTxCByw9x8FmnrCDexi9/cOUJOiI=",
-    "header": "X-Algo-API-Token",
-    "realm": "www.globdrem.com",
-    "CheckExpiration": "true"
-  },
+  "AlgorandAuthentication": {
+    "AlgodServer": "https://testnet-api.algonode.cloud",
+    "AlgodServerToken": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "NetworkGenesisHash": "SGO1GKSzyE7IEPItTxCByw9x8FmnrCDexi9/cOUJOiI=",
+    "AlgodServerHeader": "X-Algo-API-Token",
+    "Realm": "2FA#ARC14",
+    "CheckExpiration": "true",
+    "Debug": "true"
+  }
 }
 ```
 
@@ -115,3 +123,9 @@ https://github.com/scholtz/AlgorandKMDServer/blob/f9d04b717f0f58cf9151bd8fa9a65b
 GraphQL algorand authentication for live websocket authenticated feeds.
 
 https://github.com/scholtz/HasuraAlgorandAuthWebHook
+
+### Algorand 2FA Multisig
+
+Project aims to create multisig account from hot wallet account, 2fa authentication account and cold storage account.
+
+https://github.com/scholtz/Algorand2FAMultisig
