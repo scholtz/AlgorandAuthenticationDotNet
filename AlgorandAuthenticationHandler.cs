@@ -93,9 +93,10 @@ namespace AlgorandAuthentication
                 {
                     throw new UnauthorizedException("Signature is invalid");
                 }
-                if (Convert.ToBase64String(tr.Tx.GenesisHash.Bytes) != Options.NetworkGenesisHash)
+                var networkHash = Convert.ToBase64String(tr.Tx.GenesisHash.Bytes);
+                if (networkHash != Options.NetworkGenesisHash)
                 {
-                    throw new UnauthorizedException("Invalid Network");
+                    throw new UnauthorizedException($"Invalid Network. Expected {Options.NetworkGenesisHash} received {networkHash}");
                 }
                 if (!string.IsNullOrEmpty(Options.Realm))
                 {

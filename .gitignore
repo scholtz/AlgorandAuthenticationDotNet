@@ -3,6 +3,6 @@
 ################################################################################
 
 /obj
-/.vs/AlgorandAuthentication/v16
+/.vs
 /bin/Debug
 /bin/Release
