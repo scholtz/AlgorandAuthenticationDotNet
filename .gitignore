@@ -6,3 +6,8 @@
 /.vs
 /bin/Debug
 /bin/Release
+
+*/obj
+*/.vs
+*/bin/Debug
+*/bin/Release
