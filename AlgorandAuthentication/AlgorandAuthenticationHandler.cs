@@ -195,7 +195,7 @@ namespace AlgorandAuthentication
             // validate all signatures
 
             var checkedSet = new HashSet<string>(); // check if signature is double inserted
-
+            var validSignatures = 0;
             foreach (var subsig in tr.MSig.Subsigs)
             {
                 var b64 = Convert.ToBase64String(subsig.key.GetEncoded());
@@ -208,7 +208,11 @@ namespace AlgorandAuthentication
                 {
                     continue;
                 }
-                if (!AlgorandAuthenticationHandler.Verify(subsig.key.GetEncoded(), tr.Tx.BytesToSign(), subsig.sig.Bytes))
+                if (AlgorandAuthenticationHandler.Verify(subsig.key.GetEncoded(), tr.Tx.BytesToSign(), subsig.sig.Bytes))
+                {
+                    validSignatures++;
+                }
+                else
                 {
                     throw new UnauthorizedException("Signature is invalid");
                 }
@@ -223,7 +227,7 @@ namespace AlgorandAuthentication
             }
 
             // check if threshold of signatures is ok
-            if (tr.MSig.Threshold < tr.MSig.Subsigs.Where(s => s.sig == null || (s.sig != null && !s.sig.Bytes.SequenceEqual(EmptySig))).Count())
+            if (tr.MSig.Threshold > validSignatures)
             {
                 throw new UnauthorizedException($"Signature is invalid. Threshold of signatures ({tr.MSig.Threshold}) has not been met ({tr.MSig.Subsigs.Where(s => s.sig != null && !s.sig.Bytes.SequenceEqual(EmptySig)).Count()}).");
             }
