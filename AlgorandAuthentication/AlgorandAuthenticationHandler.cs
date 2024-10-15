@@ -223,9 +223,9 @@ namespace AlgorandAuthentication
             }
 
             // check if threshold of signatures is ok
-            if (tr.MSig.Threshold < tr.MSig.Subsigs.Where(s => s.sig != null && !s.sig.Bytes.SequenceEqual(EmptySig)).Count())
+            if (tr.MSig.Threshold < tr.MSig.Subsigs.Where(s => s.sig == null || (s.sig != null && !s.sig.Bytes.SequenceEqual(EmptySig))).Count())
             {
-                throw new UnauthorizedException("Signature is invalid. Threshold of signatures has not been met.");
+                throw new UnauthorizedException($"Signature is invalid. Threshold of signatures ({tr.MSig.Threshold}) has not been met ({tr.MSig.Subsigs.Where(s => s.sig != null && !s.sig.Bytes.SequenceEqual(EmptySig)).Count()}).");
             }
 
             return await AlgorandAuthenticationHandler.VerifyCommon(Options, tr);
