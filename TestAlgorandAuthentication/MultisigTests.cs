@@ -1,9 +1,6 @@
 using Algorand;
 using Algorand.Algod;
 using Algorand.Algod.Model.Transactions;
-using Algorand.Utils;
-using Castle.Core.Logging;
-using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
