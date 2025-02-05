@@ -14,24 +14,8 @@ public void ConfigureServices(
 
 ...
 
-	var algorandAuthenticationOptions = new AlgorandAuthenticationOptions();
-	builder.Configuration.GetSection("AlgorandAuthentication").Bind(algorandAuthenticationOptions);
-
-	builder.Services
-	 .AddAuthentication(AlgorandAuthenticationHandler.ID)
-	 .AddAlgorand(o =>
-	 {
-		 o.CheckExpiration = algorandAuthenticationOptions.CheckExpiration;
-		 o.Debug = algorandAuthenticationOptions.Debug;
-		 o.AlgodServer = algorandAuthenticationOptions.AlgodServer;
-		 o.AlgodServerToken = algorandAuthenticationOptions.AlgodServerToken;
-		 o.AlgodServerHeader = algorandAuthenticationOptions.AlgodServerHeader;
-		 o.Realm = algorandAuthenticationOptions.Realm;
-		 o.NetworkGenesisHash = algorandAuthenticationOptions.NetworkGenesisHash;
-		 o.MsPerBlock = algorandAuthenticationOptions.MsPerBlock;
-		 o.EmptySuccessOnFailure = algorandAuthenticationOptions.EmptySuccessOnFailure;
-		 o.EmptySuccessOnFailure = algorandAuthenticationOptions.EmptySuccessOnFailure;
-	 });
+	builder.Services.Configure<AlgorandAuthenticationOptionsV2>(builder.Configuration.GetSection("AlgorandAuthentication"));
+	builder.Services.AddAuthentication(AlgorandAuthenticationHandlerV2.ID).AddAlgorand();
 
 ...
 
@@ -56,13 +40,16 @@ appsettings.json
 ```json
 {
   "AlgorandAuthentication": {
-    "AlgodServer": "https://testnet-api.algonode.cloud",
-    "AlgodServerToken": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-    "NetworkGenesisHash": "SGO1GKSzyE7IEPItTxCByw9x8FmnrCDexi9/cOUJOiI=",
-    "AlgodServerHeader": "X-Algo-API-Token",
-    "Realm": "2FA#ARC14",
-    "CheckExpiration": "true",
-    "Debug": "true"
+    "Realm": "MyProject#ARC14",
+    "CheckExpiration": true,
+    "Debug": false,
+    "AllowedNetworks": {
+      "SGO1GKSzyE7IEPItTxCByw9x8FmnrCDexi9/cOUJOiI=": {
+        "Server": "https://testnet-api.4160.nodely.dev",
+        "Token": "",
+        "Header": ""
+      }
+    }
   }
 }
 ```
@@ -129,3 +116,46 @@ https://github.com/scholtz/HasuraAlgorandAuthWebHook
 Project aims to create multisig account from hot wallet account, 2fa authentication account and cold storage account.
 
 https://github.com/scholtz/Algorand2FAMultisig
+
+
+## Migration guide from V1 to V2
+
+### Convert appsettings.json
+
+```
+{
+  "AlgorandAuthentication": {
+    "AlgodServer": "https://testnet-api.algonode.cloud",
+    "AlgodServerToken": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "NetworkGenesisHash": "SGO1GKSzyE7IEPItTxCByw9x8FmnrCDexi9/cOUJOiI=",
+    "AlgodServerHeader": "X-Algo-API-Token",
+    "Realm": "2FA#ARC14",
+    "CheckExpiration": "true",
+    "Debug": "true"
+  }
+}
+```
+to
+```
+{
+  "AlgorandAuthentication": {
+    "Realm": "MyProject#ARC14",
+    "CheckExpiration": true,
+    "Debug": false,
+    "AllowedNetworks": {
+      "SGO1GKSzyE7IEPItTxCByw9x8FmnrCDexi9/cOUJOiI=": {
+        "Server": "https://testnet-api.4160.nodely.dev",
+        "Token": "",
+        "Header": ""
+      }
+    }
+  }
+}
+```
+
+in startup.cs or program.cs use
+
+```
+	builder.Services.Configure<AlgorandAuthenticationOptionsV2>(builder.Configuration.GetSection("AlgorandAuthentication"));
+	builder.Services.AddAuthentication(AlgorandAuthenticationHandlerV2.ID).AddAlgorand();
+```
