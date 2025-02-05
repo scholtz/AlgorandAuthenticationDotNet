@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Authentication;
+using System.Collections.Generic;
 
 namespace AlgorandAuthentication
 {

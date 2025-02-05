@@ -1,12 +1,19 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace AlgorandAuthentication
 {
     public class UnauthorizedException : Exception
+    {
+        public UnauthorizedException(string message) : base(message)
+        {
+
+        }
+    }
+}
+
+namespace AlgorandAuthenticationV2
+{
+    public class UnauthorizedException : AlgorandAuthentication.UnauthorizedException
     {
         public UnauthorizedException(string message) : base(message)
         {
