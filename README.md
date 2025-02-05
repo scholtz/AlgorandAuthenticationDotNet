@@ -14,8 +14,17 @@ public void ConfigureServices(
 
 ...
 
-	builder.Services.Configure<AlgorandAuthenticationOptionsV2>(builder.Configuration.GetSection("AlgorandAuthentication"));
-	builder.Services.AddAuthentication(AlgorandAuthenticationHandlerV2.ID).AddAlgorand();
+            var authOptions = builder.Configuration.GetSection("AlgorandAuthentication").Get<AlgorandAuthenticationOptionsV2>();
+            if (authOptions == null) throw new Exception("Config for the authentication is missing");
+            builder.Services.AddAuthentication(AlgorandAuthenticationHandlerV2.ID).AddAlgorand(a =>
+            {
+                a.Realm = authOptions.Realm;
+                a.CheckExpiration = authOptions.CheckExpiration;
+                a.EmptySuccessOnFailure = authOptions.EmptySuccessOnFailure;
+                a.AllowedNetworks = authOptions.AllowedNetworks;
+                a.Debug = authOptions.Debug;
+            });
+
 
 ...
 
@@ -156,6 +165,15 @@ to
 in startup.cs or program.cs use
 
 ```
-	builder.Services.Configure<AlgorandAuthenticationOptionsV2>(builder.Configuration.GetSection("AlgorandAuthentication"));
-	builder.Services.AddAuthentication(AlgorandAuthenticationHandlerV2.ID).AddAlgorand();
+            var authOptions = builder.Configuration.GetSection("AlgorandAuthentication").Get<AlgorandAuthenticationOptionsV2>();
+            if (authOptions == null) throw new Exception("Config for the authentication is missing");
+            builder.Services.AddAuthentication(AlgorandAuthenticationHandlerV2.ID).AddAlgorand(a =>
+            {
+                a.Realm = authOptions.Realm;
+                a.CheckExpiration = authOptions.CheckExpiration;
+                a.EmptySuccessOnFailure = authOptions.EmptySuccessOnFailure;
+                a.AllowedNetworks = authOptions.AllowedNetworks;
+                a.Debug = authOptions.Debug;
+            });
+
 ```
