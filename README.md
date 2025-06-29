@@ -6,7 +6,14 @@ https://github.com/algorandfoundation/ARCs/issues/42
 
 ## Usage
 
-StartUp.cs
+### Install nuget
+
+```
+dotnet add package AlgorandAuthentication --version 2.0.1
+```
+
+### StartUp.cs
+
 ```c#
 public void ConfigureServices(
 	IServiceCollection services)
@@ -45,7 +52,8 @@ public void Configure(
 }
 ```
 
-appsettings.json
+### appsettings.json
+
 ```json
 {
   "AlgorandAuthentication": {
