@@ -97,13 +97,16 @@ namespace AlgorandAuthenticationV2
                 var auth = Request.Headers[header].ToString();
                 if (auth.ToLower().StartsWith(BearerPrefix))
                 {
-                    auth = auth.Substring(0, BearerPrefix.Length);
+                    auth = auth.Substring(BearerPrefix.Length);
                 }
                 if (!auth.StartsWith(AuthPrefix))
                 {
                     throw new UnauthorizedException($"Authorization header does not start with prefix {AuthPrefix}");
                 }
-                var tx = Convert.FromBase64String(auth.Replace(AuthPrefix, ""));
+                auth = auth.Substring(AuthPrefix.Length);
+                auth = auth.Replace(" ", "+");
+
+                var tx = Convert.FromBase64String(auth);
                 var tr = Algorand.Utils.Encoder.DecodeFromMsgPack<Algorand.Algod.Model.Transactions.SignedTransaction>(tx);
                 if (tr.Tx == null)
                 {
