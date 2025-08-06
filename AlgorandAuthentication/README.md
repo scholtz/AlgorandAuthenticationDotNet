@@ -213,6 +213,7 @@ in startup.cs or program.cs use
             {
                 a.Realm = authOptions.Realm;
                 a.CheckExpiration = authOptions.CheckExpiration;
+                a.AllowEmptyAccounts = authOptions.AllowEmptyAccounts;
                 a.EmptySuccessOnFailure = authOptions.EmptySuccessOnFailure;
                 a.AllowedNetworks = authOptions.AllowedNetworks;
                 a.Debug = authOptions.Debug;

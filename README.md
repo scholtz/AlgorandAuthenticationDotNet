@@ -192,6 +192,7 @@ to
   "AlgorandAuthentication": {
     "Realm": "MyProject#ARC14",
     "CheckExpiration": true,
+    "AllowEmptyAccounts": false,
     "Debug": false,
     "AllowedNetworks": {
       "SGO1GKSzyE7IEPItTxCByw9x8FmnrCDexi9/cOUJOiI=": {
@@ -213,6 +214,7 @@ in startup.cs or program.cs use
             {
                 a.Realm = authOptions.Realm;
                 a.CheckExpiration = authOptions.CheckExpiration;
+                a.AllowEmptyAccounts = authOptions.AllowEmptyAccounts;
                 a.EmptySuccessOnFailure = authOptions.EmptySuccessOnFailure;
                 a.AllowedNetworks = authOptions.AllowedNetworks;
                 a.Debug = authOptions.Debug;
