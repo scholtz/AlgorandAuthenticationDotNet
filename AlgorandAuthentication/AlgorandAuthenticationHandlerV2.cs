@@ -22,6 +22,7 @@ namespace AlgorandAuthenticationV2
     public class AlgorandAuthenticationHandlerV2 : AuthenticationHandler<AlgorandAuthenticationOptionsV2>, IAuthenticationRequestHandler, IAuthenticationHandler
     {
         public const string ID = "AlgorandAuthentication";
+        public const string BearerPrefix = "bearer ";
         public const string AuthPrefix = "SigTx ";
         private readonly ILogger<AlgorandAuthenticationHandlerV2> logger;
         private static DateTimeOffset? t;
@@ -94,6 +95,10 @@ namespace AlgorandAuthenticationV2
                     logger.LogDebug($"Auth header: {Request.Headers[header]}");
                 }
                 var auth = Request.Headers[header].ToString();
+                if (auth.ToLower().StartsWith(BearerPrefix))
+                {
+                    auth = auth.Substring(0, BearerPrefix.Length);
+                }
                 if (!auth.StartsWith(AuthPrefix))
                 {
                     throw new UnauthorizedException($"Authorization header does not start with prefix {AuthPrefix}");
