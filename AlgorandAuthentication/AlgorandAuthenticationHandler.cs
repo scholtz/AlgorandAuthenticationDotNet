@@ -273,11 +273,11 @@ namespace AlgorandAuthentication
                     estimatedCurrentBlock = block;
                 }
 
-                if (tr.Tx.LastValid.Value < estimatedCurrentBlock)
+                if (tr.Tx.LastValid < estimatedCurrentBlock)
                 {
                     throw new UnauthorizedException("Session timed out");
                 }
-                expiration = DateTimeOffset.UtcNow + TimeSpan.FromMilliseconds((tr.Tx.LastValid.Value - estimatedCurrentBlock) * Options.MsPerBlock);
+                expiration = DateTimeOffset.UtcNow + TimeSpan.FromMilliseconds((tr.Tx.LastValid - estimatedCurrentBlock) * Options.MsPerBlock);
             }
 
             var user = tr.Tx.Sender.ToString();
@@ -292,8 +292,8 @@ namespace AlgorandAuthentication
                 {
                     claims.Add(new Claim("exp", expiration.Value.ToUnixTimeSeconds().ToString()));
                 }
-                claims.Add(new Claim("AlgoValidFrom", tr.Tx.FirstValid.Value.ToString()));
-                claims.Add(new Claim("AlgoValidUntil", tr.Tx.LastValid.Value.ToString()));
+                claims.Add(new Claim("AlgoValidFrom", tr.Tx.FirstValid.ToString()));
+                claims.Add(new Claim("AlgoValidUntil", tr.Tx.LastValid.ToString()));
             }
 
             var identity = new ClaimsIdentity(claims, ID);

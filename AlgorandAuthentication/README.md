@@ -6,7 +6,14 @@ https://github.com/algorandfoundation/ARCs/issues/42
 
 ## Usage
 
-StartUp.cs
+### Install nuget
+
+```
+dotnet add package AlgorandAuthentication --version 2.0.2
+```
+
+### StartUp.cs
+
 ```c#
 public void ConfigureServices(
 	IServiceCollection services)
@@ -14,8 +21,17 @@ public void ConfigureServices(
 
 ...
 
-	builder.Services.Configure<AlgorandAuthenticationOptionsV2>(builder.Configuration.GetSection("AlgorandAuthentication"));
-	builder.Services.AddAuthentication(AlgorandAuthenticationHandlerV2.ID).AddAlgorand();
+            var authOptions = builder.Configuration.GetSection("AlgorandAuthentication").Get<AlgorandAuthenticationOptionsV2>();
+            if (authOptions == null) throw new Exception("Config for the authentication is missing");
+            builder.Services.AddAuthentication(AlgorandAuthenticationHandlerV2.ID).AddAlgorand(a =>
+            {
+                a.Realm = authOptions.Realm;
+                a.CheckExpiration = authOptions.CheckExpiration;
+                a.EmptySuccessOnFailure = authOptions.EmptySuccessOnFailure;
+                a.AllowedNetworks = authOptions.AllowedNetworks;
+                a.Debug = authOptions.Debug;
+            });
+
 
 ...
 
@@ -36,16 +52,51 @@ public void Configure(
 }
 ```
 
-appsettings.json
+### appsettings.json
+
 ```json
 {
   "AlgorandAuthentication": {
     "Realm": "MyProject#ARC14",
     "CheckExpiration": true,
+    "AllowEmptyAccounts": false,
     "Debug": false,
     "AllowedNetworks": {
       "SGO1GKSzyE7IEPItTxCByw9x8FmnrCDexi9/cOUJOiI=": {
         "Server": "https://testnet-api.4160.nodely.dev",
+        "Token": "",
+        "Header": ""
+      }
+    }
+  }
+}
+```
+
+```json
+{
+  "AlgorandAuthentication": {
+    "Realm": "MyProject#ARC14",
+    "CheckExpiration": true,
+    "AllowEmptyAccounts": false,
+    "Debug": false,
+    "AllowedNetworks": {
+      "SGO1GKSzyE7IEPItTxCByw9x8FmnrCDexi9/cOUJOiI=": {
+        "Server": "https://testnet-api.4160.nodely.dev",
+        "Token": "",
+        "Header": ""
+      },
+      "wGHE2Pwdvd7S12BL5FaOP20EGYesN73ktiC1qzkkit8=": {
+        "Server": "https://mainnet-api.4160.nodely.dev",
+        "Token": "",
+        "Header": ""
+      },
+      "r20fSQI8gWe/kFZziNonSPCXLwcQmH/nxROvnnueWOk=": {
+        "Server": "https://mainnet-api.voi.nodely.dev",
+        "Token": "",
+        "Header": ""
+      },
+      "PgeQVJJgx/LYKJfIEz7dbfNPuXmDyJ+O7FwQ4XL9tE8=": {
+        "Server": "https://algod.aramidmain.a-wallet.net",
         "Token": "",
         "Header": ""
       }
@@ -156,6 +207,15 @@ to
 in startup.cs or program.cs use
 
 ```
-	builder.Services.Configure<AlgorandAuthenticationOptionsV2>(builder.Configuration.GetSection("AlgorandAuthentication"));
-	builder.Services.AddAuthentication(AlgorandAuthenticationHandlerV2.ID).AddAlgorand();
+            var authOptions = builder.Configuration.GetSection("AlgorandAuthentication").Get<AlgorandAuthenticationOptionsV2>();
+            if (authOptions == null) throw new Exception("Config for the authentication is missing");
+            builder.Services.AddAuthentication(AlgorandAuthenticationHandlerV2.ID).AddAlgorand(a =>
+            {
+                a.Realm = authOptions.Realm;
+                a.CheckExpiration = authOptions.CheckExpiration;
+                a.EmptySuccessOnFailure = authOptions.EmptySuccessOnFailure;
+                a.AllowedNetworks = authOptions.AllowedNetworks;
+                a.Debug = authOptions.Debug;
+            });
+
 ```

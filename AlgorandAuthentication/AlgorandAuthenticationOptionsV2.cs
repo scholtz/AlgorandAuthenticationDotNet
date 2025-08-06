@@ -25,6 +25,7 @@ namespace AlgorandAuthenticationV2
     public class AlgorandAuthenticationOptionsV2 : AuthenticationSchemeOptions
     {
         public bool CheckExpiration { get; set; } = false;
+        public bool AllowEmptyAccounts { get; set; } = false;
         public string Realm { get; set; } = "Authentication";
         public bool EmptySuccessOnFailure { get; set; } = false;
         public bool Debug { get; set; } = false;

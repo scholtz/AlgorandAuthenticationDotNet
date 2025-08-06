@@ -172,7 +172,40 @@ namespace AlgorandAuthenticationV2
             }
             var algodHttpClient = HttpClientConfigurator.ConfigureHttpClient(network.Server, network.Token, network.Header);
             var algodClient = new Algorand.Algod.DefaultApi(algodHttpClient);
-            var account = await algodClient.AccountInformationAsync(tr.Tx.Sender.EncodeAsString());
+            Algorand.Algod.Model.Account? account = null;
+            try
+            {
+                account = await algodClient.AccountInformationAsync(tr.Tx.Sender.EncodeAsString());
+
+            }
+            catch
+            {
+                if (Options.AllowEmptyAccounts)
+                {
+                    account = new Algorand.Algod.Model.Account
+                    {
+                        AuthAddr = tr.Tx.Sender,
+                        Address = tr.Tx.Sender,
+                        Amount = 0
+                    };
+                }
+            }
+            if (account.Amount == 0)
+            {
+                if (Options.AllowEmptyAccounts)
+                {
+                    account = new Algorand.Algod.Model.Account
+                    {
+                        AuthAddr = tr.Tx.Sender,
+                        Address = tr.Tx.Sender,
+                        Amount = 0
+                    };
+                }
+            }
+            if (account == null)
+            {
+                throw new UnauthorizedException("Empty accounts are not allowed");
+            }
             return account.AuthAddr ?? tr.Tx.Sender;
         }
         /// <summary>
@@ -280,11 +313,11 @@ namespace AlgorandAuthenticationV2
                     estimatedCurrentBlock = block;
                 }
 
-                if (tr.Tx.LastValid.Value < estimatedCurrentBlock)
+                if (tr.Tx.LastValid < estimatedCurrentBlock)
                 {
                     throw new UnauthorizedException("Session timed out");
                 }
-                expiration = DateTimeOffset.UtcNow + TimeSpan.FromMilliseconds((tr.Tx.LastValid.Value - estimatedCurrentBlock) * network.MsPerBlock);
+                expiration = DateTimeOffset.UtcNow + TimeSpan.FromMilliseconds((tr.Tx.LastValid - estimatedCurrentBlock) * network.MsPerBlock);
             }
 
             var user = tr.Tx.Sender.ToString();
@@ -299,8 +332,8 @@ namespace AlgorandAuthenticationV2
                 {
                     claims.Add(new Claim("exp", expiration.Value.ToUnixTimeSeconds().ToString()));
                 }
-                claims.Add(new Claim("AlgoValidFrom", tr.Tx.FirstValid.Value.ToString()));
-                claims.Add(new Claim("AlgoValidUntil", tr.Tx.LastValid.Value.ToString()));
+                claims.Add(new Claim("AlgoValidFrom", tr.Tx.FirstValid.ToString()));
+                claims.Add(new Claim("AlgoValidUntil", tr.Tx.LastValid.ToString()));
             }
 
             var identity = new ClaimsIdentity(claims, ID);
