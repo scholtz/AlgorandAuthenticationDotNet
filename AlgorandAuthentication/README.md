@@ -9,7 +9,7 @@ https://github.com/algorandfoundation/ARCs/issues/42
 ### Install nuget
 
 ```
-dotnet add package AlgorandAuthentication --version 2.0.2
+dotnet add package AlgorandAuthentication --version 2.0.3
 ```
 
 ### StartUp.cs
