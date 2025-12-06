@@ -289,6 +289,17 @@ namespace AlgorandAuthenticationV2
             {
                 throw new UnauthorizedException($"Invalid Network. Received {networkHash}. Configured {string.Join(",", Options.AllowedNetworks.Keys)}");
             }
+
+            if (Options.Realms.Any())
+            {
+                var realm = Encoding.ASCII.GetString(tr.Tx.Note);
+                if (!Options.Realms.Contains(realm))
+                {
+                    // todo: add meaningful message
+                    throw new UnauthorizedException($"Wrong realm. Expected one of {string.Join(", ", Options.Realms)} received {realm}");
+                }
+            }
+            else
             if (!string.IsNullOrEmpty(Options.Realm))
             {
                 var realm = Encoding.ASCII.GetString(tr.Tx.Note);
@@ -298,6 +309,8 @@ namespace AlgorandAuthenticationV2
                     throw new UnauthorizedException($"Wrong realm. Expected {Options.Realm} received {realm}");
                 }
             }
+
+
             DateTimeOffset? expiration = null;
             if (Options.CheckExpiration)
             {

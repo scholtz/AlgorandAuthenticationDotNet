@@ -56,6 +56,7 @@ namespace TestAlgorandAuthentication
                     }
                 },
                 Realm = Realm,
+                Realms = new List<string>() { Realm },
                 CheckExpiration = false,
             };
             var monitor = Mock.Of<IOptionsMonitor<AlgorandAuthenticationV2.AlgorandAuthenticationOptionsV2>>(_ => _.CurrentValue == au);
@@ -95,6 +96,8 @@ namespace TestAlgorandAuthentication
                     }
                 },
                 Realm = Realm,
+                Realms = new List<string>() { Realm },
+
                 CheckExpiration = false,
             };
 
@@ -148,6 +151,7 @@ namespace TestAlgorandAuthentication
                     }
                 },
                 Realm = Realm,
+                Realms = new List<string>() { Realm },
                 CheckExpiration = false,
             };
 
