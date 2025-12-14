@@ -1,6 +1,7 @@
 using Algorand;
 using Algorand.Algod;
 using Algorand.Algod.Model.Transactions;
+using AlgorandAuthentication;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -36,13 +37,13 @@ namespace TestAlgorandAuthentication
         public async Task ValidateMultisigTransaction()
         {
             var transParams = await algodApiInstance.TransactionParamsAsync();
-            var payment = PaymentTransaction.GetPaymentTransactionFromNetworkTransactionParameters(multiAddress.ToAddress(), multiAddress.ToAddress(), 0, Realm, transParams);
+            var payment = ARC14.CreatePayload(multiAddress.ToAddress(), multiAddress.ToAddress(), Realm, transParams);
 
             // sign with 2 addresses (2 of 3 threshold)
             var signedTx1 = payment.Sign(multiAddress, acc1);
             var signedTx2 = payment.Sign(multiAddress, acc2);
             var signedTx = SignedTransaction.MergeMultisigTransactions(signedTx1, signedTx2);
-            var auth = "SigTx " + Convert.ToBase64String(Algorand.Utils.Encoder.EncodeToMsgPackOrdered(signedTx));
+            var auth = ARC14.CreateHeader(signedTx);
 
             var au = new AlgorandAuthentication.AlgorandAuthenticationOptions() { Debug = true, AlgodServer = ALGOD_API_ADDR, AlgodServerToken = ALGOD_API_TOKEN, Realm = Realm, CheckExpiration = false, NetworkGenesisHash = "SGO1GKSzyE7IEPItTxCByw9x8FmnrCDexi9/cOUJOiI=" };
             var monitor = Mock.Of<IOptionsMonitor<AlgorandAuthentication.AlgorandAuthenticationOptions>>(_ => _.CurrentValue == au);
@@ -66,9 +67,7 @@ namespace TestAlgorandAuthentication
         public async Task ValidateSinglesigTransaction()
         {
             var transParams = await algodApiInstance.TransactionParamsAsync();
-            var payment = PaymentTransaction.GetPaymentTransactionFromNetworkTransactionParameters(acc1.Address, multiAddress.ToAddress(), 0, Realm, transParams);
-            var signedTx = payment.Sign(acc2); // rekeyd
-            var auth = "SigTx " + Convert.ToBase64String(Algorand.Utils.Encoder.EncodeToMsgPackOrdered(signedTx));
+            var auth = ARC14.CreateHeader(acc2, Realm, transParams);
 
             var au = new AlgorandAuthentication.AlgorandAuthenticationOptions() { Debug = true, AlgodServer = ALGOD_API_ADDR, AlgodServerToken = ALGOD_API_TOKEN, Realm = Realm, CheckExpiration = false, NetworkGenesisHash = "SGO1GKSzyE7IEPItTxCByw9x8FmnrCDexi9/cOUJOiI=" };
             var monitor = Mock.Of<IOptionsMonitor<AlgorandAuthentication.AlgorandAuthenticationOptions>>(_ => _.CurrentValue == au);
