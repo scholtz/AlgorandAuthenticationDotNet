@@ -24,8 +24,8 @@ namespace AlgorandAuthenticationV2
         public const string BearerPrefix = "bearer ";
         public const string AuthPrefix = "SigTx ";
         private readonly ILogger<AlgorandAuthenticationHandlerV2> logger;
-        private static DateTimeOffset? t;
-        private static ulong block;
+        private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, (DateTimeOffset t, ulong block)> blockCache
+            = new System.Collections.Concurrent.ConcurrentDictionary<string, (DateTimeOffset, ulong)>();
         private readonly byte[] EmptySig;
         /// <summary>
         /// Constructor
@@ -90,7 +90,9 @@ namespace AlgorandAuthenticationV2
 
                 if (Options.Debug)
                 {
-                    logger.LogDebug($"Auth header: {Request.Headers[header]}");
+                    // Only a prefix/length is logged - the header is a signed transaction, never a
+                    // private key, but it is a replayable credential and should not be fully logged.
+                    logger.LogDebug($"Auth header received. Length: {Request.Headers[header].ToString().Length}, Prefix: {Truncate(Request.Headers[header].ToString(), 16)}");
                 }
                 var auth = Request.Headers[header].ToString();
                 if (auth.ToLower().StartsWith(BearerPrefix))
@@ -139,6 +141,10 @@ namespace AlgorandAuthenticationV2
                     var claims = new List<Claim>() {
                         new Claim(ClaimTypes.NameIdentifier,user),
                         new Claim(ClaimTypes.Name,user),
+                        // Lets downstream authorization policies positively detect that this ticket is an
+                        // EmptySuccessOnFailure fallback rather than a genuinely verified signature, instead of
+                        // having to infer it from an empty NameIdentifier.
+                        new Claim("AlgoAuthFallback","true"),
                     };
 
                     var identity = new ClaimsIdentity(claims, Scheme.Name);
@@ -186,8 +192,10 @@ namespace AlgorandAuthenticationV2
                 account = await algodClient.AccountInformationAsync(tr.Tx.Sender.EncodeAsString());
 
             }
-            catch
+            catch (Algorand.ApiException e) when (e.StatusCode == 404)
             {
+                // Confirmed by the algod node that the account genuinely does not exist on-chain yet -
+                // safe to treat as a brand-new, never-rekeyed account when AllowEmptyAccounts is enabled.
                 if (Options.AllowEmptyAccounts)
                 {
                     account = new Algorand.Algod.Model.Account
@@ -198,6 +206,9 @@ namespace AlgorandAuthenticationV2
                     };
                 }
             }
+            // Any other failure (timeout, DNS, 5xx, transport error, etc.) must fail closed rather than
+            // silently assuming the account was never rekeyed - see RISK-001. Doing otherwise would let a
+            // signature from an old/compromised key that was rekeyed away from succeed during an algod outage.
             if (account.Amount == 0)
             {
                 if (Options.AllowEmptyAccounts)
@@ -292,6 +303,10 @@ namespace AlgorandAuthenticationV2
 
             if (Options.Realms.Any())
             {
+                if (tr.Tx.Note == null)
+                {
+                    throw new UnauthorizedException($"Wrong realm. Expected one of {string.Join(", ", Options.Realms)} received no note.");
+                }
                 var realm = Encoding.ASCII.GetString(tr.Tx.Note);
                 if (!Options.Realms.Contains(realm))
                 {
@@ -302,12 +317,23 @@ namespace AlgorandAuthenticationV2
             else
             if (!string.IsNullOrEmpty(Options.Realm))
             {
+                if (tr.Tx.Note == null)
+                {
+                    throw new UnauthorizedException($"Wrong realm. Expected {Options.Realm} received no note.");
+                }
                 var realm = Encoding.ASCII.GetString(tr.Tx.Note);
                 if (Options.Realm != realm)
                 {
                     // todo: add meaningful message
                     throw new UnauthorizedException($"Wrong realm. Expected {Options.Realm} received {realm}");
                 }
+            }
+            else
+            {
+                // Both Realm and Realms are empty - this removes domain separation between different
+                // applications sharing the same AllowedNetworks configuration (RISK-007). Fail closed
+                // instead of silently accepting any realm/no realm at all.
+                throw new UnauthorizedException("No realm configured. At least one of Realm or Realms must be set to enforce domain separation.");
             }
 
 
@@ -316,9 +342,11 @@ namespace AlgorandAuthenticationV2
             {
                 var network = Options.AllowedNetworks[networkHash];
                 ulong estimatedCurrentBlock;
-                if (t.HasValue && t.Value.AddHours(1) > DateTimeOffset.UtcNow)
+                // Cache is partitioned per network genesis hash so that a round number fetched for one
+                // configured network is never used to estimate expiration for a different network (RISK-004).
+                if (blockCache.TryGetValue(networkHash, out var cached) && cached.t.AddHours(1) > DateTimeOffset.UtcNow)
                 {
-                    estimatedCurrentBlock = Convert.ToUInt64((DateTimeOffset.UtcNow - t.Value).TotalSeconds) / 5 + block;
+                    estimatedCurrentBlock = Convert.ToUInt64((DateTimeOffset.UtcNow - cached.t).TotalSeconds) / 5 + cached.block;
                 }
                 else
                 {
@@ -328,10 +356,10 @@ namespace AlgorandAuthenticationV2
                     var c = await algodClient.GetStatusAsync();
                     if (c != null)
                     {
-                        t = DateTimeOffset.UtcNow;
-                        block = (ulong)c.LastRound;
+                        cached = (DateTimeOffset.UtcNow, (ulong)c.LastRound);
+                        blockCache[networkHash] = cached;
                     }
-                    estimatedCurrentBlock = block;
+                    estimatedCurrentBlock = cached.block;
                 }
 
                 if (tr.Tx.LastValid < estimatedCurrentBlock)
@@ -371,6 +399,14 @@ namespace AlgorandAuthenticationV2
             signer.Init(false, pk);
             signer.BlockUpdate(message.ToArray(), 0, message.ToArray().Length);
             return signer.VerifySignature(sig);
+        }
+        private static string Truncate(string value, int maxLength)
+        {
+            if (string.IsNullOrEmpty(value) || value.Length <= maxLength)
+            {
+                return value;
+            }
+            return value.Substring(0, maxLength) + "...";
         }
     }
 }

@@ -44,6 +44,8 @@ namespace AlgorandAuthenticationV2
     {
         /// <summary>
         /// Gets or sets a value indicating whether to check the expiration of the authentication.
+        /// When false (the default), a captured/leaked "SigTx" header can be replayed indefinitely because no
+        /// expiration is enforced. Production deployments should set this to true.
         /// </summary>
         public bool CheckExpiration { get; set; } = false;
 
@@ -66,11 +68,18 @@ namespace AlgorandAuthenticationV2
 
         /// <summary>
         /// Gets or sets a value indicating whether to return an empty success on failure.
+        /// When true, a signature/verification failure results in a *successful* authentication with an empty
+        /// identity instead of a rejected request. Any consumer enabling this must check for the
+        /// "AlgoAuthFallback" claim (or a non-empty NameIdentifier) before treating the caller as authorized -
+        /// checking only User.Identity.IsAuthenticated is not sufficient and will treat unauthenticated callers
+        /// as logged in.
         /// </summary>
         public bool EmptySuccessOnFailure { get; set; } = false;
 
         /// <summary>
         /// Gets or sets a value indicating whether debug mode is enabled.
+        /// Must never be enabled in production. When true, a prefix/length of the Authorization header (a
+        /// replayable signed transaction) is written to the configured logger.
         /// </summary>
         public bool Debug { get; set; } = false;
 
