@@ -1,5 +1,11 @@
 name: Release
 
+# Builds, tests, packs and publishes to nuget.org in a single run — no PAT needed.
+# (A commit/tag pushed with the default GITHUB_TOKEN doesn't re-trigger other
+# workflows, so publish-nuget.yml would never fire for a push made from here.
+# Doing everything in one job sidesteps that instead of adding a personal
+# access token, keeping this strictly on nuget.org Trusted Publishing / OIDC.)
+
 on:
   workflow_dispatch:
     inputs:
@@ -12,8 +18,12 @@ permissions:
   contents: write
 
 jobs:
-  bump-tag-push:
+  release:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write # required so GitHub can issue the OIDC token for NuGet Trusted Publishing
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -38,6 +48,14 @@ jobs:
             exit 1
           fi
 
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            8.0.x
+            9.0.x
+            10.0.x
+
       - name: Update csproj version
         shell: bash
         run: |
@@ -47,6 +65,35 @@ jobs:
           sed -i "s#<AssemblyVersion>[^<]*</AssemblyVersion>#<AssemblyVersion>${VERSION}.0</AssemblyVersion>#" "$FILE"
           grep -E "<Version>|<AssemblyVersion>" "$FILE"
 
+      - name: Restore
+        run: dotnet restore AlgorandAuthentication.sln
+
+      - name: Build
+        run: dotnet build AlgorandAuthentication.sln -c Release --no-restore
+
+      - name: Test
+        run: dotnet test AlgorandAuthentication.sln -c Release --no-build
+
+      - name: Pack
+        run: dotnet pack AlgorandAuthentication/AlgorandAuthentication.csproj -c Release --no-build -o artifacts
+
+      # Exchanges this workflow's GitHub OIDC token for a short-lived (1 hour, single-use) NuGet API key.
+      # Requires a Trusted Publishing policy configured on nuget.org for this repo + workflow file.
+      # See: https://learn.microsoft.com/en-us/nuget/nuget-org/trusted-publishing
+      - name: NuGet login (OIDC -> temp API key)
+        uses: NuGet/login@v1
+        id: nuget-login
+        with:
+          user: ${{ secrets.NUGET_USER }}
+
+      - name: NuGet push
+        run: |
+          dotnet nuget push artifacts/*.nupkg \
+            --api-key ${{ steps.nuget-login.outputs.NUGET_API_KEY }} \
+            --source https://api.nuget.org/v3/index.json \
+            --skip-duplicate
+
+      # Only commit/tag once the package has actually published successfully.
       - name: Commit version bump
         shell: bash
         run: |

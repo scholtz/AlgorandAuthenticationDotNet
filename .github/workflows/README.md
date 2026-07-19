@@ -1,14 +1,17 @@
 # Publishing to NuGet
 
-`publish-nuget.yml` builds the solution, runs the tests, and publishes
-`AlgorandAuthentication` to nuget.org whenever a tag matching `v*.*.*`
-(e.g. `v2.1.2`) is pushed. It can also be run manually from the
-**Actions** tab (`workflow_dispatch`).
+There are two workflows:
 
-Publishing uses nuget.org's **Trusted Publishing** (OIDC) instead of a
-long-lived API key: GitHub issues a short-lived, single-use token to the
-workflow, which nuget.org exchanges for a NuGet API key valid for one hour.
-No NuGet API key is ever stored in this repo.
+- **`release.yml`** — the normal way to cut a release. Run it manually
+  from the **Actions** tab (`workflow_dispatch`), enter the new version
+  (e.g. `2.1.3`), and in one run it bumps the csproj version, builds,
+  tests, packs, publishes to nuget.org, then commits and tags the release.
+- **`publish-nuget.yml`** — a fallback that publishes whenever a tag
+  matching `v*.*.*` is pushed by a human (e.g. `git tag v2.1.3 && git push origin v2.1.3`).
+  It isn't used by `release.yml` itself — see "Why one workflow, not two" below.
+
+Both use nuget.org's **Trusted Publishing** (OIDC) exclusively — no NuGet
+API key and no GitHub personal access token is stored anywhere in this repo.
 
 ## One-time setup
 
@@ -25,41 +28,53 @@ Add it under **Settings → Secrets and variables → Actions → New repository
 
 ### 2. Trusted Publishing policy on nuget.org
 
+A Trusted Publishing policy is scoped to one workflow filename, and both
+workflows here can publish, so add one policy per workflow:
+
 1. Sign in to [nuget.org](https://www.nuget.org).
 2. Click your username → **Trusted Publishing**.
-3. Add a new policy with:
+3. Add a policy for the release workflow:
    - **Repository Owner:** `scholtz`
    - **Repository:** `AlgorandAuthenticationDotNet`
-   - **Workflow File:** `publish-nuget.yml` (file name only, not the `.github/workflows/` path)
-   - **Environment:** leave empty (this workflow doesn't use a GitHub Actions environment)
-4. Choose the policy owner (your user or an org) — this must be the same
-   account/org that owns the `AlgorandAuthentication` package on nuget.org.
+   - **Workflow File:** `release.yml`
+   - **Environment:** leave empty
+4. Add a second policy the same way with **Workflow File:** `publish-nuget.yml`
+   (only needed if you plan to use the manual tag-push fallback).
+5. Choose the policy owner (your user or an org) for both — this must be
+   the same account/org that owns the `AlgorandAuthentication` package on
+   nuget.org.
 
 Policies on private repos start in a temporary 7-day active state until
-the first successful publish; this repo is public so the policy activates
+the first successful publish; this repo is public so policies activate
 immediately.
 
 ## Releasing a new version
 
-Run **release.yml** from the **Actions** tab (`workflow_dispatch`) and
-enter the new version (e.g. `2.1.3`) in the `version` input. It will:
+1. Go to **Actions → Release → Run workflow**.
+2. Enter the version, e.g. `2.1.3`.
+3. The workflow: validates the version format and that the tag doesn't
+   already exist, updates `<Version>`/`<AssemblyVersion>` in
+   `AlgorandAuthentication/AlgorandAuthentication.csproj`, builds, runs
+   the tests, packs, and publishes to nuget.org via Trusted Publishing.
+   Only once the publish succeeds does it commit the version bump, create
+   tag `v2.1.3`, and push both.
 
-1. Update `<Version>` / `<AssemblyVersion>` in
-   `AlgorandAuthentication/AlgorandAuthentication.csproj`.
-2. Commit that change to the branch the workflow was run on.
-3. Create tag `v2.1.3` and push both the commit and the tag.
+### Why one workflow, not two
 
-Pushing the tag automatically triggers `publish-nuget.yml`, which builds,
-tests, packs, and publishes the release. The publish workflow also
-verifies the tag matches the csproj `<Version>` before packing, so a
-mismatch fails fast instead of publishing the wrong version.
+The obvious split — a `release.yml` that bumps/commits/tags, whose tag
+push then triggers `publish-nuget.yml` — doesn't work without a personal
+access token: GitHub deliberately does not trigger other workflows from a
+commit/tag pushed using the default `GITHUB_TOKEN`. Rather than add a PAT
+just to work around that, `release.yml` does the build/test/pack/publish
+itself in the same run, so the whole release only ever relies on
+nuget.org Trusted Publishing.
 
-This job needs `contents: write` (already granted in the workflow) since
-it pushes a commit and a tag using the default `GITHUB_TOKEN`.
+`publish-nuget.yml` still exists and still triggers correctly for a tag
+pushed manually by a person (a real user push isn't subject to that
+restriction) — useful if you ever want to publish from a tag without going
+through the `release.yml` version-bump flow.
 
 ### Manual alternative
-
-You can still do it by hand instead of using `release.yml`:
 
 ```bash
 # after bumping <Version>/<AssemblyVersion> in the csproj and committing
