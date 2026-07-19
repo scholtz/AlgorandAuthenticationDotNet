@@ -33,6 +33,14 @@ namespace TestAlgorandAuthentication
             multiAddress = new MultisigAddress(1, 2, new List<byte[]> { acc1.Address.Bytes, acc2.Address.Bytes, acc3.Address.Bytes });
         }
 
+        [TearDown]
+        public void TearDown()
+        {
+            acc1?.Dispose();
+            acc2?.Dispose();
+            acc3?.Dispose();
+        }
+
         [Test]
         public async Task ValidateMultisigTransaction()
         {
