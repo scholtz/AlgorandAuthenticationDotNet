@@ -12,8 +12,8 @@
 		<RepositoryUrl>https://github.com/scholtz/AlgorandAuthenticationDotNet</RepositoryUrl>
 		<NeutralLanguage>en-US</NeutralLanguage>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
-		<Version>2.1.3</Version>
-		<AssemblyVersion>2.1.3.0</AssemblyVersion>
+		<Version>2.1.4</Version>
+		<AssemblyVersion>2.1.4.0</AssemblyVersion>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 	</PropertyGroup>
 
