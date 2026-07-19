@@ -72,8 +72,7 @@ namespace TestAlgorandAuthentication
             var loggerFactory = LoggerFactory.Create(c => c.AddConsole().SetMinimumLevel(LogLevel.Debug));
 
             var urlEncoder = UrlEncoder.Default;
-            var clock = new RealSystemClock();
-            var handler = new AlgorandAuthenticationV2.AlgorandAuthenticationHandlerV2(monitor, loggerFactory, urlEncoder, clock);
+            var handler = new AlgorandAuthenticationV2.AlgorandAuthenticationHandlerV2(monitor, loggerFactory, urlEncoder);
 
             var context = new DefaultHttpContext();
             context.Request.Headers.Authorization = auth;
@@ -114,8 +113,7 @@ namespace TestAlgorandAuthentication
             var loggerFactory = LoggerFactory.Create(c => c.AddConsole().SetMinimumLevel(LogLevel.Debug));
 
             var urlEncoder = UrlEncoder.Default;
-            var clock = new RealSystemClock();
-            var handler = new AlgorandAuthenticationV2.AlgorandAuthenticationHandlerV2(monitor, loggerFactory, urlEncoder, clock);
+            var handler = new AlgorandAuthenticationV2.AlgorandAuthenticationHandlerV2(monitor, loggerFactory, urlEncoder);
 
             var context = new DefaultHttpContext();
             context.Request.Headers.Authorization = auth;
@@ -167,8 +165,7 @@ namespace TestAlgorandAuthentication
             var loggerFactory = LoggerFactory.Create(c => c.AddConsole().SetMinimumLevel(LogLevel.Debug));
 
             var urlEncoder = UrlEncoder.Default;
-            var clock = new RealSystemClock();
-            var handler = new AlgorandAuthenticationV2.AlgorandAuthenticationHandlerV2(monitor, loggerFactory, urlEncoder, clock);
+            var handler = new AlgorandAuthenticationV2.AlgorandAuthenticationHandlerV2(monitor, loggerFactory, urlEncoder);
 
             var context1 = new DefaultHttpContext();
             context1.Request.Headers.Authorization = auth1;

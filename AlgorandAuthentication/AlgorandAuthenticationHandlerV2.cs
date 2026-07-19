@@ -12,7 +12,6 @@ using System.Security.Claims;
 using System.Text;
 using System.Text.Encodings.Web;
 using System.Threading.Tasks;
-using ISystemClock = Microsoft.AspNetCore.Authentication.ISystemClock;
 
 namespace AlgorandAuthenticationV2
 {
@@ -37,8 +36,7 @@ namespace AlgorandAuthenticationV2
         public AlgorandAuthenticationHandlerV2(
             IOptionsMonitor<AlgorandAuthenticationOptionsV2> options,
             ILoggerFactory loggerFactory,
-            UrlEncoder encoder,
-            ISystemClock clock) : base(options, loggerFactory, encoder, clock)
+            UrlEncoder encoder) : base(options, loggerFactory, encoder)
         {
             this.logger = loggerFactory.CreateLogger<AlgorandAuthenticationHandlerV2>();
             EmptySig = new byte[64];
@@ -180,7 +178,9 @@ namespace AlgorandAuthenticationV2
             }
             var algodHttpClient = HttpClientConfigurator.ConfigureHttpClient(network.Server, network.Token, network.Header);
             var algodClient = new Algorand.Algod.DefaultApi(algodHttpClient);
+#nullable enable
             Algorand.Algod.Model.Account? account = null;
+#nullable disable
             try
             {
                 account = await algodClient.AccountInformationAsync(tr.Tx.Sender.EncodeAsString());

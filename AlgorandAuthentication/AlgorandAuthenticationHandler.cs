@@ -12,7 +12,6 @@ using System.Security.Claims;
 using System.Text;
 using System.Text.Encodings.Web;
 using System.Threading.Tasks;
-using ISystemClock = Microsoft.AspNetCore.Authentication.ISystemClock;
 
 namespace AlgorandAuthentication
 {
@@ -36,8 +35,7 @@ namespace AlgorandAuthentication
         public AlgorandAuthenticationHandler(
             IOptionsMonitor<AlgorandAuthenticationOptions> options,
             ILoggerFactory loggerFactory,
-            UrlEncoder encoder,
-            ISystemClock clock) : base(options, loggerFactory, encoder, clock)
+            UrlEncoder encoder) : base(options, loggerFactory, encoder)
         {
             this.logger = loggerFactory.CreateLogger<AlgorandAuthenticationHandler>();
             EmptySig = new byte[64];

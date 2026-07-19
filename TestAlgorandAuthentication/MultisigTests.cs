@@ -59,8 +59,7 @@ namespace TestAlgorandAuthentication
             var loggerFactory = LoggerFactory.Create(c => c.AddConsole().SetMinimumLevel(LogLevel.Debug));
 
             var urlEncoder = UrlEncoder.Default;
-            var clock = new RealSystemClock();
-            var handler = new AlgorandAuthentication.AlgorandAuthenticationHandler(monitor, loggerFactory, urlEncoder, clock);
+            var handler = new AlgorandAuthentication.AlgorandAuthenticationHandler(monitor, loggerFactory, urlEncoder);
 
             var context = new DefaultHttpContext();
             context.Request.Headers.Authorization = auth;
@@ -83,8 +82,7 @@ namespace TestAlgorandAuthentication
             var loggerFactory = LoggerFactory.Create(c => c.AddConsole().SetMinimumLevel(LogLevel.Debug));
 
             var urlEncoder = UrlEncoder.Default;
-            var clock = new RealSystemClock();
-            var handler = new AlgorandAuthentication.AlgorandAuthenticationHandler(monitor, loggerFactory, urlEncoder, clock);
+            var handler = new AlgorandAuthentication.AlgorandAuthenticationHandler(monitor, loggerFactory, urlEncoder);
 
             var context = new DefaultHttpContext();
             context.Request.Headers.Authorization = auth;
@@ -96,10 +94,6 @@ namespace TestAlgorandAuthentication
         }
     }
 
-    public class RealSystemClock : Microsoft.AspNetCore.Authentication.ISystemClock
-    {
-        public DateTimeOffset UtcNow => DateTimeOffset.UtcNow;
-    }
     class Events
     {
 
