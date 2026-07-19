@@ -41,15 +41,28 @@ immediately.
 
 ## Releasing a new version
 
-1. Bump `<Version>` / `<AssemblyVersion>` in `AlgorandAuthentication/AlgorandAuthentication.csproj`.
-2. Commit and push to `main`.
-3. Tag the commit and push the tag, e.g.:
+Run **release.yml** from the **Actions** tab (`workflow_dispatch`) and
+enter the new version (e.g. `2.1.3`) in the `version` input. It will:
 
-   ```bash
-   git tag v2.1.2
-   git push origin v2.1.2
-   ```
+1. Update `<Version>` / `<AssemblyVersion>` in
+   `AlgorandAuthentication/AlgorandAuthentication.csproj`.
+2. Commit that change to the branch the workflow was run on.
+3. Create tag `v2.1.3` and push both the commit and the tag.
 
-The workflow verifies the tag (`v2.1.2`) matches the csproj `<Version>`
-(`2.1.2`) before packing, so a mismatched tag fails fast instead of
-publishing the wrong version.
+Pushing the tag automatically triggers `publish-nuget.yml`, which builds,
+tests, packs, and publishes the release. The publish workflow also
+verifies the tag matches the csproj `<Version>` before packing, so a
+mismatch fails fast instead of publishing the wrong version.
+
+This job needs `contents: write` (already granted in the workflow) since
+it pushes a commit and a tag using the default `GITHUB_TOKEN`.
+
+### Manual alternative
+
+You can still do it by hand instead of using `release.yml`:
+
+```bash
+# after bumping <Version>/<AssemblyVersion> in the csproj and committing
+git tag v2.1.3
+git push origin v2.1.3
+```
